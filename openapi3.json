@@ -1,0 +1,632 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "TextSynth API",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Abdullah Saleem",
+      "email": "a.saleem2993@gmail.com",
+      "url": "https://github.com/abdullah2993/textsynth-openapi-v3-spec"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.textsynth.com/v1"
+    }
+  ],
+  "paths": {
+    "/engines/{engine_id}/completions": {
+      "post": {
+        "summary": "Generate text completions using a specified engine",
+        "operationId": "generateCompletion",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "engine_id",
+            "in": "path",
+            "description": "The ID of the engine to use for text generation",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Input text and completion options",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "CompletionRequest",
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "description": "The input text to complete"
+                  },
+                  "max_tokens": {
+                    "type": "integer",
+                    "description": "Maximum number of tokens to generate",
+                    "default": 100
+                  },
+                  "stream": {
+                    "type": "boolean",
+                    "description": "If true, the output is streamed",
+                    "default": false
+                  },
+                  "stop": {
+                    "type": "array",
+                    "description": "Stop the generation when the string(s) are encountered",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "n": {
+                    "type": "integer",
+                    "description": "Generate n completions from a single prompt",
+                    "default": 1
+                  },
+                  "temperature": {
+                    "type": "number",
+                    "description": "Sampling temperature",
+                    "default": 1
+                  },
+                  "top_k": {
+                    "type": "integer",
+                    "description": "Select the next output token among the top_k most likely ones",
+                    "default": 40
+                  },
+                  "top_p": {
+                    "type": "number",
+                    "description": "Select the next output token among the most probable ones",
+                    "default": 0.9
+                  },
+                  "logit_bias": {
+                    "type": "object",
+                    "description": "Modify the likelihood of the specified tokens in the completion"
+                  },
+                  "presence_penalty": {
+                    "type": "number",
+                    "description": "Penalizes tokens which already appeared in the generated text"
+                  },
+                  "frequency_penalty": {
+                    "type": "number",
+                    "description": "Penalizes tokens which already appeared in the generated text proportionaly to their frequency"
+                  },
+                  "repetition_penalty": {
+                    "type": "number",
+                    "description": "Divide by repetition_penalty the logits corresponding to tokens which already appeared in the generated text",
+                    "default": 1
+                  },
+                  "typical_p": {
+                    "type": "number",
+                    "description": "Alternative to top_p sampling",
+                    "default": 1
+                  }
+                },
+                "required": [
+                  "prompt"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully generated completions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "CompletionResponse",
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "oneOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      ],
+                      "description": "The completed text"
+                    },
+                    "reached_end": {
+                      "type": "boolean",
+                      "description": "If true, indicate that it is the last answer"
+                    },
+                    "truncated_prompt": {
+                      "type": "boolean",
+                      "description": "If true, indicate that the prompt was truncated"
+                    },
+                    "input_tokens": {
+                      "type": "integer",
+                      "description": "Indicate the number of input tokens"
+                    },
+                    "output_tokens": {
+                      "type": "integer",
+                      "description": "Indicate the total number of generated tokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/engines/{engine_id}/translate": {
+      "post": {
+        "summary": "Translates one or several texts to a target language",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "engine_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the engine to use for translation. Currently only m2m100_1_2B is supported."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "TranslateRequest",
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 64,
+                    "description": "Array of texts to translate. Batches of at most 64 texts can be provided."
+                  },
+                  "source_lang": {
+                    "type": "string",
+                    "description": "Two or three character ISO language code for the source language. The special value \"auto\" indicates to auto-detect the source language."
+                  },
+                  "target_lang": {
+                    "type": "string",
+                    "description": "Two or three character ISO language code for the target language."
+                  },
+                  "split_sentences": {
+                    "type": "boolean",
+                    "description": "Flag to indicate if automatic sentence splitting should be used"
+                  },
+                  "num_beams": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "default": 4,
+                    "description": "Number of beams used to generate the translated text"
+                  }
+                },
+                "required": [
+                  "text",
+                  "target_lang"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Translation successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "TranslateResponse",
+                  "type": "object",
+                  "properties": {
+                    "translations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "description": "Translated text"
+                          },
+                          "detected_source_lang": {
+                            "type": "string",
+                            "description": "ISO language code corresponding to the detected lang (identical to source_lang if language auto-detection is not enabled)"
+                          }
+                        },
+                        "required": [
+                          "text"
+                        ]
+                      },
+                      "description": "Array of translation objects"
+                    },
+                    "input_tokens": {
+                      "type": "integer",
+                      "description": "Total number of input tokens"
+                    },
+                    "output_tokens": {
+                      "type": "integer",
+                      "description": "Total number of generated tokens"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/engines/{engine_id}/logprob": {
+      "post": {
+        "summary": "Returns the logarithm of the probability that a continuation is generated after a context",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "engine_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "LogProbRequest",
+                "type": "object",
+                "properties": {
+                  "context": {
+                    "type": "string",
+                    "description": "If empty string, the context is set to the End-Of-Text token."
+                  },
+                  "continuation": {
+                    "type": "string",
+                    "description": "Must be a non-empty string."
+                  }
+                },
+                "required": [
+                  "context",
+                  "continuation"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "LogProbResponse",
+                  "type": "object",
+                  "properties": {
+                    "logprob": {
+                      "type": "number",
+                      "format": "double",
+                      "description": "Logarithm of the probability of generation of continuation preceded by context. It corresponds to the sum of the logarithms of the probabilities of the tokens of continuation. It is always <= 0."
+                    },
+                    "num_tokens": {
+                      "type": "integer",
+                      "description": "Number of tokens in continuation."
+                    },
+                    "is_greedy": {
+                      "type": "boolean",
+                      "description": "true if continuation would be generated by greedy sampling from continuation."
+                    },
+                    "input_tokens": {
+                      "type": "integer",
+                      "description": "Indicates the total number of input tokens. It is useful to estimate the number of compute resources used by the request."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/engines/{engine_id}/tokenize": {
+      "post": {
+        "summary": "Tokenize a given text",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "engine_id",
+            "in": "path",
+            "required": true,
+            "description": "The ID of the engine to use",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The text to tokenize",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "TokenizeRequest",
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "The text to tokenize"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tokenization successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "TokenizeResponse",
+                  "type": "object",
+                  "properties": {
+                    "tokens": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      },
+                      "description": "The token indexes corresponding to the input text"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/engines/{engine_id}/text_to_image": {
+      "post": {
+        "summary": "Generate one or several images from a text prompt",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "engine_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the selected engine"
+          }
+        ],
+        "requestBody": {
+          "description": "The text to tokenize",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "title": "ImageToTextRequest",
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "description": "The text prompt. Only the first 75 tokens are used."
+                  },
+                  "image_count": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "Number of images to generate. At most 4 images can be generated with one request. The generation of an image takes about 2 seconds.",
+                    "maximum": 4
+                  },
+                  "width": {
+                    "type": "integer",
+                    "default": 512,
+                    "description": "Width in pixels of the generated images. The only accepted values are 384, 512, 640 and 768. The product width by height must be <= 393216 (hence a maximum size of 512x768 or 768x512). The model is trained with 512x512 images, so the best results are obtained with this size.",
+                    "enum": [
+                      384,
+                      512,
+                      640,
+                      768
+                    ]
+                  },
+                  "height": {
+                    "type": "integer",
+                    "default": 512,
+                    "description": "Height in pixels of the generated images. The only accepted values are 384, 512, 640 and 768. The product width by height must be <= 393216 (hence a maximum size of 512x768 or 768x512). The model is trained with 512x512 images, so the best results are obtained with this size.",
+                    "enum": [
+                      384,
+                      512,
+                      640,
+                      768
+                    ]
+                  },
+                  "timesteps": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Number of diffusion steps. Larger values usually give a better result but the image generation takes longer."
+                  },
+                  "guidance_scale": {
+                    "type": "number",
+                    "default": 7.5,
+                    "description": "Guidance Scale. A larger value gives a larger importance to the text prompt with respect to a random image generation."
+                  },
+                  "seed": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "Random number seed. A non zero seed yields always the same images. It is useful to get deterministic results and try different sets of parameters."
+                  }
+                },
+                "required": [
+                  "prompt"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Images generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ImageToTextResponse",
+                  "type": "object",
+                  "properties": {
+                    "images": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "data": {
+                            "type": "string",
+                            "description": "Base64 encoded generated JPEG image."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/credits": {
+      "get": {
+        "summary": "Get the remaining credits on your account",
+        "description": "Returns the number of remaining credits on your TextSynth account, multiplied by 1e9.",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "CreditsResponse",
+                  "type": "object",
+                  "properties": {
+                    "credits": {
+                      "type": "integer",
+                      "description": "Number of remaining credits multiplied by 1e9"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization"
+      }
+    }
+  }
+}
